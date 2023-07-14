@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.SpaceBoard.mappers.User">  <!-- 가상의 패키지에 가상의 팩토리 만드는 것. -->
+	
+<!-- 아이디 중복 체크. 카운터가 0이면 아이디 사용 가능, 1이면 기존 사용중인 아이디 -->	
+<select id="idCheck" parameterType="string" resultType="int">
+	select count(*) from tbl_user where userid = #{userid}
+</select>
+
+<!-- 로그인 정보 가져 오기 -->
+<select id="login" parameterType="string" resultType="com.SpaceBoard.dto.UserVO">
+	select userid, username, password, authkey, role from tbl_user where userid = #{userid}
+</select>
+
+<!-- 사용자 등록 -->
+<insert id="signup" parameterType="com.SpaceBoard.dto.UserVO">
+	insert into tbl_user (userid, username, password, gender, hobby, job, description, zipcode, address, telno, email, role, org_filename, stored_filename, filesize) values (#{userid}, #{username}, #{password}, #{gender}, #{hobby}, #{job}, #{description}, #{zipcode}, #{address}, #{telno}, #{email}, 'USER', #{org_filename}, #{stored_filename}, #{filesize})
+</insert>
+
+<!-- 사용자 자동 로그인을 위한 authkey 등록 -->
+<update id="authkeyUpdate" parameterType="com.SpaceBoard.dto.UserVO">
+	update tbl_user set authkey = #{authkey} where userid = #{userid}
+</update>
+
+<!-- // 사용자 자동 로그인을 위한 authkey로 사용자 정보 가져오기 -->
+<select id="userinfoByAuthkey" parameterType="string" resultType="com.SpaceBoard.dto.UserVO">
+	select * from tbl_user where authkey = #{authkey}
+</select>
+
+<!-- 우편번호 행 최대 갯수 계산 -->
+<select id="addrTotalCount" parameterType="string" resultType="int">
+	select count(*) from tbl_addr where road like concat('%', #{addSearch}, '%') or building like concat('%',#{addrSearch},'%')
+</select>
+
+<!-- 우편번호 검색 -->
+<select id="addrSearch" parameterType="HashMap" resultType="com.SpaceBoard.dto.AddressVO">
+	select zipcode, province, road, building, oldaddr from tbl_addr where road like concat('%',#{addrSearch},'%') or building like concat('%',#{addrSearch},'%') order by zipcode limit #{startPoint},#{postNum}
+</select>
+
+<!-- 회원 정보 보기 -->
+<select id="userinfo" parameterType="string" resultType="com.SpaceBoard.dto.UserVO">
+	select userid, username,gender,hobby,job,description,zipcode,address,telno,email,role,org_filename,stored_filename,filesize
+	from tbl_user where userid = #{userid}
+</select>
+
+<!-- 사용자 정보 수정 보기 -->
+<select id="memberInfoView" parameterType="string" resultType="com.SpaceBoard.dto.UserVO">
+	select userid,username,password,gender,hobby,job,description,zipcode,address,telno,email,role,org_filename,stored_filename,filesize
+	from tbl_user where userid = #{userid}
+</select>
+
+<!-- 사용자 정보 수정 -->
+<update id="memberInfoUpdate" parameterType="com.SpaceBoard.dto.UserVO">
+	update tbl_user set telno=#{telno}, email=#{email}, zipcode=#{zipcode},
+		address=#{address}, org_filename=#{org_filename}, stored_filename=#{stored_filename},
+		filesize=#{filesize}, description=#{description} where userid=#{userid}
+</update>
+
+<!-- 사용자 아이디 찾기 -->
+<select id="searchID" parameterType="com.SpaceBoard.dto.UserVO" resultType="string">
+	select userid from tbl_user where username=#{username} and telno=#{telno}
+</select>
+
+<!-- 패스워드 임시 발급을 위한 확인 -->
+<select id="searchPassword" parameterType="com.SpaceBoard.dto.UserVO" resultType="int">
+	select count(*) from tbl_user where userid=#{userid} and username=#{username}
+</select>
+
+<!-- 패스워드 수정 -->
+<update id="passwordUpdate" parameterType="com.SpaceBoard.dto.UserVO">
+	update tbl_user set password=#{password}, pwcheck=1 where userid=#{userid}
+</update>
+
+<!-- 회원 탈퇴 -->
+<delete id="memberInfoDelete" parameterType="string">
+	delete from tbl_user where userid=#{userid}
+</delete>
+
+<!-- 패스워드 변경 후 30일 경과 확인 -->
+<select id="pwcheck" parameterType="string" resultType="com.SpaceBoard.dto.UserVO">
+	select round(now() - lastpwdate) as pwdiff, pwcheck from tbl_member where userid = #{userid}
+</select>
+
+<!-- 패스워드 확인 후 30일 이후에 패스워드 변경하도록 pwcheck 값 변경 -->
+<update id="memberPasswordModifyAfter30" parameterType="string">
+	update tbl_member set pwcheck = (pwcheck +1) where userid = #{userid}
+</update>
+
+</mapper>
